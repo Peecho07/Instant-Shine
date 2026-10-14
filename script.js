@@ -67,6 +67,15 @@
     });
   });
 
+  // Prefill service when arriving from a "Book this" button on the pricing page
+  var wanted = new URLSearchParams(window.location.search).get("service");
+  var serviceSelect = document.getElementById("service");
+  if (wanted && serviceSelect) {
+    for (var si = 0; si < serviceSelect.options.length; si++) {
+      if (serviceSelect.options[si].value === wanted) { serviceSelect.selectedIndex = si; break; }
+    }
+  }
+
   // Prefill service from "Book this" buttons
   document.querySelectorAll("[data-book]").forEach(function (link) {
     link.addEventListener("click", function () {
