@@ -19,5 +19,5 @@ Built on spec by tsKaizen. All copy, prices, hours, photos and the testimonial c
 
 - Plain HTML, CSS and JS. No build step. Deploys to Netlify by drag and drop.
 - Booking form uses Netlify Forms. Submissions show up in the Netlify dashboard and can email the owner.
-- Photos currently load from the existing Wix site. Before launch, download and host them with the site.
+- Photos are copied from the existing site into images/ and hosted with the demo, so it no longer depends on Wix.
 - Recommended before launch: a business email on a custom domain to replace the Yahoo address.
