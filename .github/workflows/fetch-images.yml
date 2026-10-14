@@ -1,0 +1,46 @@
+name: Copy photos from the current site
+
+# One time job: downloads the photos the demo uses from the current Wix site,
+# stores them in images/ and points index.html at the local copies.
+on:
+  push:
+    paths: [".github/workflows/fetch-images.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download photos and rewrite links
+        run: |
+          set -euo pipefail
+          mkdir -p images
+          base="https://static.wixstatic.com/media"
+          while read -r name id size; do
+            url="$base/90a441_${id}~mv2.jpg/v1/fill/${size}/90a441_${id}~mv2.jpg"
+            curl -fsSL --retry 4 -o "images/$name.jpg" "$url"
+            ls -l "images/$name.jpg"
+            # swap every Wix URL for this photo with the local file
+            sed -i -E "s#https://static\.wixstatic\.com/media/90a441_${id}~mv2\.jpg/v1/fill/[^\"]*#images/$name.jpg#g" index.html
+          done <<'LIST'
+          hero 68190c3c6c2f4b23a2150b55da1962e3 w_1600,h_1360,al_c,q_85
+          work-1 0c5476a2e5354103b41eb4ddcee89e60 w_900,h_1286,al_c,q_82
+          work-2 d6112e4141ee4cdf851aeb83ce60a02f w_900,h_900,al_c,q_82
+          work-3 dd55306738b84f1a9741d4cb57b11f3c w_900,h_900,al_c,q_82
+          work-4 6644603ce1b74521896c8cd6ca9d7abe w_900,h_1286,al_c,q_82
+          work-5 78e2682db0cb45a9b61c362fde554216 w_900,h_900,al_c,q_82
+          work-6 c1dfa7a810dd486b8c96b0e3af11c23a w_900,h_900,al_c,q_82
+          owner fe45f97e4c9a4e30b8a28d4778cba2d3 w_800,h_1000,al_c,q_85
+          LIST
+          if grep -q wixstatic index.html; then echo "Some links were not replaced"; grep -n wixstatic index.html; exit 1; fi
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add images index.html
+          git commit -m "Host site photos locally instead of loading them from Wix" || echo "Nothing to commit"
+          git push
