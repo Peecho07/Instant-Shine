@@ -116,6 +116,84 @@
     els.forEach(function (el) { el.classList.add("is-visible"); });
   }
 
+  // ---- Detailing theme effects ----
+  var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var hasIO = "IntersectionObserver" in window;
+  function onView(selector, cls, threshold) {
+    var nodes = document.querySelectorAll(selector);
+    if (!hasIO) { nodes.forEach(function (n) { n.classList.add(cls); }); return; }
+    var obs = new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) {
+        if (en.isIntersecting) { en.target.classList.add(cls); obs.unobserve(en.target); }
+      });
+    }, { threshold: threshold });
+    nodes.forEach(function (n) { obs.observe(n); });
+  }
+
+  // Gloss reveal and gauge sweep
+  onView(".gloss", "is-glossy", 0.25);
+  onView(".gauge-stat", "is-live", 0.5);
+
+  // Finish level bars: Clean, Satin, Gloss, Mirror
+  var levels = ["Clean", "Satin", "Gloss", "Mirror"];
+  document.querySelectorAll(".finish").forEach(function (bar) {
+    var lvl = Number(bar.dataset.level) || 1;
+    bar.setAttribute("role", "img");
+    bar.setAttribute("aria-label", "Finish level: " + levels[lvl - 1] + " (" + lvl + " of 4)");
+    bar.innerHTML = levels.map(function (name, i) {
+      return '<span class="seg' + (i < lvl ? " on" : "") + '"><b></b><span>' + name + "</span></span>";
+    }).join("");
+  });
+
+  // Water beading: droplets roll off the top edge of a card on hover
+  var beadSpots = [[12, 7, 0], [27, 5, 90], [41, 8, 40], [58, 6, 140], [73, 7, 60], [88, 5, 120]];
+  if (!reduce) {
+    document.querySelectorAll(".card--interactive").forEach(function (card) {
+      var wrap = document.createElement("span");
+      wrap.className = "beads";
+      wrap.setAttribute("aria-hidden", "true");
+      wrap.innerHTML = beadSpots.map(function (b) {
+        return '<i style="--x:' + b[0] + "%;--s:" + b[1] + "px;--d:" + b[2] + 'ms"></i>';
+      }).join("");
+      card.appendChild(wrap);
+      card.addEventListener("mouseenter", function () {
+        wrap.style.setProperty("--fall", card.offsetHeight + 12 + "px");
+      });
+    });
+  }
+
+  // Process timeline: line fills with the accent as you scroll through it
+  var process = document.querySelector(".process");
+  if (process) {
+    var steps = process.querySelectorAll(".step");
+    var update = function () {
+      var r = process.getBoundingClientRect();
+      var vh = window.innerHeight;
+      var p = reduce ? 1 : Math.min(1, Math.max(0, (vh * 0.75 - r.top) / (r.height + vh * 0.25)));
+      process.style.setProperty("--progress", p.toFixed(3));
+      steps.forEach(function (s, i) { s.classList.toggle("is-lit", p >= i / steps.length); });
+    };
+    var ticking = false;
+    window.addEventListener("scroll", function () {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(function () { update(); ticking = false; });
+    }, { passive: true });
+    window.addEventListener("resize", update);
+    update();
+  }
+
+  // Booking condition selector adjusts the helper text
+  var help = document.getElementById("condition-help");
+  var conditionText = {
+    Light: "Regular upkeep. Dust, light dirt, a few crumbs. Starting prices usually apply.",
+    Moderate: "Some stains, pet hair or water spots. We may suggest an add-on, and we'll confirm the price first.",
+    Heavy: "Deep stains, heavy pet hair, oxidation or swirl marks. Text us a photo and we'll quote it before we start."
+  };
+  document.querySelectorAll('input[name="condition"]').forEach(function (r) {
+    r.addEventListener("change", function () { if (help && r.checked) help.textContent = conditionText[r.value]; });
+  });
+
   // Footer year
   var y = document.getElementById("year");
   if (y) y.textContent = new Date().getFullYear();
